@@ -1,11 +1,11 @@
 ---
 name: second-brain
-description: 个人第二大脑系统 - 快速捕捉想法、自动分类归档到 Obsidian。当用户要求记录想法、保存稍后阅读、创建笔记、处理 Inbox、或提到"第二大脑"、"知识管理"时激活。
+description: 个人第二大脑系统 - 快速捕捉想法、自动分类归档到 Obsidian。当用户要求记录想法、保存稍后阅读、创建笔记、处理 Inbox、搜索笔记、或提到"第二大脑"、"知识管理"时激活。
 ---
 
 # 第二大脑 Skill
 
-基于 Obsidian 的个人知识管理系统。
+基于 Obsidian 的个人知识管理系统，支持捕捉、整理、检索。
 
 ## Vault 路径
 `/Users/czx229/Documents/BaiduSyncDisk/Notes`
@@ -54,6 +54,114 @@ description: 个人第二大脑系统 - 快速捕捉想法、自动分类归档�
    ---
    ```
 4. **打标签** - 提取 1-2 个核心名词作为标签，**标签不能包含空格**
+
+### `/note-search` - 搜索笔记
+用法：
+- `搜索笔记: [关键词]`
+- `/note-search [关键词]`
+
+支持多关键词搜索，用空格分隔。
+
+**搜索范围：**
+- 文件名（标题）
+- YAML tags 字段
+- 【内容摘要】
+- 正文内容
+
+**返回格式：**
+```
+🔍 找到 N 条相关笔记：
+
+📄 [标题]
+   📁 [分类] | 🏷️ [标签]
+   📝 [摘要或内容片段]
+   📍 [相对路径]
+```
+
+## 搜索实现
+
+### 步骤 1：关键词搜索
+使用 grep 搜索 Vault 目录：
+```bash
+grep -r -i -l "[关键词]" "/Users/czx229/Documents/BaiduSyncDisk/Notes" --include="*.md"
+```
+
+对于多关键词，分别搜索后取交集（同时包含所有关键词的文件）。
+
+### 步骤 2：读取匹配文件
+对每个匹配文件，读取：
+- YAML front matter（提取 title、tags、date）
+- 【内容摘要】（如果有）
+- 匹配上下文（关键词前后 50 字）
+
+### 步骤 3：排序优先级
+搜索结果按以下优先级排序：
+1. **标题匹配** - 标题包含关键词，优先级最高
+2. **标签匹配** - tags 字段包含关键词
+3. **摘要匹配** - 【内容摘要】包含关键词
+4. **正文匹配** - 其他位置匹配
+
+### 步骤 4：格式化输出
+```
+🔍 找到 N 条相关笔记：
+
+📄 [标题]
+   📁 [分类] | 🏷️ [标签]
+   📝 [摘要或匹配片段]
+   📍 [相对路径]
+```
+
+### 高级搜索
+
+**按标签过滤：**
+```
+标签：[标签名]
+找 #AI编程 的笔记
+```
+
+**按分类过滤：**
+```
+分类：[分类名]
+在 Tech_AI 里找 AI 相关
+```
+
+**组合搜索：**
+```
+在 10_Tech_AI 分类里找 Claude Code
+标签：AI编程 关键词：Claude
+```
+
+### 示例
+
+**用户输入：**
+```
+帮我找 Claude Code 相关的笔记
+```
+
+**执行搜索：**
+```bash
+grep -r -i -l "Claude Code\|ClaudeCode\|Claude-Code" "/Users/czx229/Documents/BaiduSyncDisk/Notes" --include="*.md"
+```
+
+**输出：**
+```
+🔍 找到 3 条相关笔记：
+
+📄 从零手搓迷你 Claude Code 教程
+   📁 10_Tech_AI | 🏷️ Claude-Code, AI编程
+   📝 GitHub 热门项目教程，4 天斩获 2 万 Star，教你从零开始构建迷你版 Claude Code。
+   📍 10_Tech_AI/从零手搓迷你Claude Code教程.md
+
+📄 当天学习总结
+   📁 10_Tech_AI | 🏷️ Claude-Code, Skill开发
+   📝 完成吴恩达 Claude Code 教程前 4 章学习，掌握 skill 创建技巧并实践。
+   📍 10_Tech_AI/当天学习总结-20260227.md
+
+📄 基于 OpenClaw+Obsidian 构建"第二大脑"
+   📁 10_Tech_AI | 🏷️ 无
+   📝 ...包含 Claude Code 教程学习记录...
+   📍 10_Tech_AI/基于OpenClaw+Obsidian构建个人"第二大脑".md
+```
 
 ## 处理规则
 
